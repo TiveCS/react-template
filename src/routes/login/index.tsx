@@ -1,4 +1,7 @@
-import { BugReportForm } from "@/components/form-demo";
+import { useForm } from "@tanstack/react-form";
+import { createFileRoute } from "@tanstack/react-router";
+import { useId } from "react";
+import z from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -9,9 +12,6 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth";
-import { useForm } from "@tanstack/react-form";
-import { createFileRoute } from "@tanstack/react-router";
-import z from "zod";
 
 export const Route = createFileRoute("/login/")({
   component: LoginPage,
@@ -34,19 +34,21 @@ function LoginPage() {
       onSubmit: loginSchema,
     },
     onSubmit: async ({ value }) => {
-      const response = await authClient.signIn.email({
+      await authClient.signIn.email({
         email: value.email,
         password: value.password,
       });
     },
   });
 
+  const formId = useId();
+
   return (
     <>
       <p>Hello, {data?.user.name}</p>
 
       <form
-        id="login-form"
+        id={formId}
         onSubmit={(e) => {
           e.preventDefault();
           form.handleSubmit();
@@ -54,9 +56,8 @@ function LoginPage() {
       >
         <FieldSet>
           <FieldGroup>
-            <form.Field
-              name="email"
-              children={(field) => {
+            <form.Field name="email">
+              {(field) => {
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid;
 
@@ -80,13 +81,12 @@ function LoginPage() {
                   </Field>
                 );
               }}
-            />
+            </form.Field>
           </FieldGroup>
 
           <FieldGroup>
-            <form.Field
-              name="password"
-              children={(field) => {
+            <form.Field name="password">
+              {(field) => {
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid;
 
@@ -110,12 +110,12 @@ function LoginPage() {
                   </Field>
                 );
               }}
-            />
+            </form.Field>
           </FieldGroup>
         </FieldSet>
       </form>
 
-      <Button type="submit" form="login-form">
+      <Button type="submit" form={formId}>
         Login with Email
       </Button>
 
