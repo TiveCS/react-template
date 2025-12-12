@@ -1,6 +1,8 @@
 import { useForm } from "@tanstack/react-form";
 import { Link } from "@tanstack/react-router";
+import { MailIcon } from "lucide-react";
 import { z } from "zod";
+import { AppInput } from "@/components/blocks/app-input";
 import { PasswordInput } from "@/components/blocks/password-input";
 import { GithubLogo } from "@/components/logo/github-logo";
 import { Button } from "@/components/ui/button";
@@ -13,39 +15,55 @@ import {
   FieldLabel,
   FieldSeparator,
 } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { GoogleLogo } from "../../logo/google-logo";
-import { AppInput } from "@/components/blocks/app-input";
-import { MailIcon } from "lucide-react";
 
-const loginSchema = z.object({
+const signUpSchema = z.object({
   email: z.email(),
-  password: z.string().min(1, "Password is required"),
+  name: z
+    .string()
+    .min(1, "Name is required")
+    .max(255, "Name is too long. Max 255 characters."),
+  password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
-export type LoginFormData = z.infer<typeof loginSchema>;
+export type SignUpFormData = z.infer<typeof signUpSchema>;
 
-export function LoginForm({
+export function SignUpForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
   const form = useForm({
     validators: {
-      onSubmit: loginSchema,
+      onSubmit: signUpSchema,
     },
     defaultValues: {
       email: "",
       password: "",
+      name: "",
     },
-    onSubmit: async ({ value: { email, password } }) => {
-      const result = await authClient.signIn.email({
+    onSubmit: async ({ value: { email, password, name } }) => {
+      const result = await authClient.signUp.email({
         email,
         password,
+        name,
       });
     },
   });
+
+  const onGoogleSignUp = async () => {
+    await authClient.signIn.social({
+      provider: "google",
+    });
+  };
+
+  const onGitHubSignUp = async () => {
+    await authClient.signIn.social({
+      provider: "github",
+      callbackURL: `${window.location.origin}/`,
+    });
+  };
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -60,9 +78,9 @@ export function LoginForm({
           >
             <FieldGroup>
               <div className="flex flex-col items-center gap-2 text-center">
-                <h1 className="text-2xl font-bold">Welcome back</h1>
+                <h1 className="text-2xl font-bold">Hello There!</h1>
                 <p className="text-muted-foreground text-balance">
-                  Login to your Acme Inc account
+                  Sign Up to getting started with Acme Inc
                 </p>
               </div>
 
@@ -82,6 +100,36 @@ export function LoginForm({
                         onChange={(e) => field.handleChange(e.target.value)}
                         aria-invalid={isInvalid}
                         placeholder="johnwok@example.com"
+                        autoComplete="off"
+                        type="email"
+                        leftIcon={<MailIcon className="size-4" />}
+                        leftIconVariant="bordered"
+                      />
+
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  );
+                }}
+              </form.Field>
+
+              <form.Field name="name">
+                {(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid;
+
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Full Name</FieldLabel>
+                      <AppInput
+                        id={field.name}
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        aria-invalid={isInvalid}
+                        placeholder="John Wok"
                         autoComplete="off"
                         leftIcon={<MailIcon className="size-4" />}
                         leftIconVariant="bordered"
@@ -145,6 +193,7 @@ export function LoginForm({
                   type="button"
                   className="cursor-pointer"
                   aria-label="Login with GitHub"
+                  onClick={onGitHubSignUp}
                 >
                   <GithubLogo />
                   <span className="sr-only">Login with GitHub</span>
@@ -155,6 +204,7 @@ export function LoginForm({
                   type="button"
                   className="cursor-pointer"
                   aria-label="Login with Google"
+                  onClick={onGoogleSignUp}
                 >
                   <GoogleLogo />
                   <span className="sr-only">Login with Google</span>
@@ -162,7 +212,7 @@ export function LoginForm({
               </Field>
 
               <FieldDescription className="text-center">
-                Don&apos;t have an account? <Link to="/signup">Sign Up</Link>
+                Already have account? <Link to="/login">Login</Link>
               </FieldDescription>
             </FieldGroup>
           </form>
